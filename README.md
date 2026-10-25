@@ -241,5 +241,5 @@ FAST-LIO 的世界坐标系是 `camera_init`，它取初始 IMU 姿态，不保�
 三维点云和二维栅格都在 `map` 系中，二维地图的 `origin` 取滤波后点云的最小 `x/y`，`origin.z = 0` 对应地面，`resolution` 为 `0.1 m`，所以两者的位置、方向、范围和格子大小一致。
 
 截图：
-
+![样例](docs/sample.png "啦啦啦啦啦啦")
 <!-- 在此插入 rviz 截图：同时显示 /mapping/map 和 /mapping/map_2d -->
