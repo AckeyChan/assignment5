@@ -8,14 +8,15 @@
 
 - `mapping_node`
   - 订阅 bag 中的 `livox_ros_driver2/msg/CustomMsg` 与 `sensor_msgs/msg/Imu`，转发到 FAST-LIO 使用的 `/livox/lidar`、`/livox/imu`
-  - 订阅 FAST-LIO 的 `/Laser_map`、`/Odometry`、`/path`，转发到 `/mapping/map`、`/mapping/odom`、`/mapping/path`
+  - 用开头若干帧 IMU 估计重力方向，把 FAST-LIO 输出的地图、里程计和轨迹旋转到重力对齐的 `map` 坐标系，并把地面平移到 `z=0`
+  - 发布 `map -> camera_init` 静态 TF，订阅 FAST-LIO 的 `/Laser_map`、`/Odometry`、`/path`，转发到 `/mapping/map`、`/mapping/odom`、`/mapping/path`
   - 提供 `mapping/save_map` 服务，把最近一帧三维地图保存为 PCD
 - `map_processor_node`
   - 可选 SOR / 半径离群点过滤，体素降采样减少点数
   - 保留高度带内的点，投影为 `nav_msgs/msg/OccupancyGrid`，发布到 `/mapping/map_2d`
   - 提供 `mapping/save_artifacts` 服务，把最新二维地图保存为 PGM 与 YAML
 - `rviz/mapping.rviz`
-  - 同时显示三维地图、轨迹和二维栅格，`Fixed Frame` 使用 FAST-LIO 的 `camera_init`
+  - 同时显示三维地图、轨迹和二维栅格，`Fixed Frame` 使用重力对齐后的 `map`
 
 ## 数据
 
@@ -70,7 +71,7 @@ colcon build --packages-select fast_lio
 source install/setup.bash
 ```
 
-本仓库的 `mid360_mapping` 还需要 PCL 与 `pcl_conversions`，相关依赖已写入 `package.xml` 和 `CMakeLists.txt`。
+本仓库的 `mid360_mapping` 还需要 PCL、`pcl_conversions`、`tf2` 和 `tf2_ros`，相关依赖已写入 `package.xml` 和 `CMakeLists.txt`。
 
 每次打开新终端，在本仓库根目录依次加载以下环境，再启动节点或回放数据：
 
@@ -145,6 +146,8 @@ ros2 launch mid360_mapping replay.launch.py \
 
 `replay.launch.py` 只回放雷达和 IMU 话题，并使用 `--clock` 提供仿真时间，FAST-LIO 仍需先启动。
 
+启动后 `mapping_node` 会先收集 `gravity_sample_count` 帧 IMU 估计重力方向，这段时间暂不发布 `/mapping/*`；bag 开头应保持静止。
+
 ## 如何保存地图
 
 节点运行期间调用服务，保存当前缓存的最新一帧地图：
@@ -180,11 +183,14 @@ ros2 service call /mapping/save_artifacts std_srvs/srv/Trigger
 | `fastlio_map_topic` | `/Laser_map` | FAST-LIO 三维地图话题 |
 | `fastlio_odom_topic` | `/Odometry` | FAST-LIO 里程计话题 |
 | `fastlio_path_topic` | `/path` | FAST-LIO 轨迹话题 |
+| `fastlio_world_frame` | `camera_init` | FAST-LIO 输出所用的世界坐标系 |
+| `gravity_align` | `true` | 是否把输出旋转到重力对齐的 `map` 系并发布静态 TF |
+| `gravity_sample_count` | `200` | 估计重力使用的 IMU 帧数，建议 bag 开头保持静止 |
 | `map_output_path` | `maps/fastlio_map.pcd` | `save_map` 保存的 PCD 路径，相对启动目录 |
-| `map_frame` | `map` | 已声明，当前实现未使用 |
-| `body_frame` | `body` | 已声明，当前实现未使用 |
+| `map_frame` | `map` | 重力对齐后的输出坐标系 |
+| `body_frame` | `body` | 里程计输出使用的 child frame，应与 FAST-LIO 的 body 一致 |
 
-这些参数以只读方式声明，运行中不能修改；话题参数不能为空。
+这些参数以只读方式声明，运行中不能修改；话题参数不能为空。`gravity_align` 为 `false` 时直接透传 FAST-LIO 输出，不再发布 `map -> camera_init` TF，此时 rviz 的 `Fixed Frame` 需要改回 `camera_init`。
 
 ### `map_processor_node`
 
@@ -194,8 +200,8 @@ ros2 service call /mapping/save_artifacts std_srvs/srv/Trigger
 | `output_directory` | `maps` | `save_artifacts` 保存 PGM/YAML 的目录，相对启动目录 |
 | `voxel_size` | `0.10` | 体素降采样叶子大小，单位 m，必须大于 0 |
 | `grid_resolution` | `0.10` | 二维栅格分辨率，单位 m，必须大于 0 |
-| `obstacle_height_min` | `0.15` | 参与二维投影的最低高度，单位 m |
-| `obstacle_height_max` | `1.50` | 参与二维投影的最高高度，单位 m，必须大于最小值 |
+| `obstacle_height_min` | `0.15` | 相对地面的最低高度，单位 m；`map` 的 `z=0` 为地面 |
+| `obstacle_height_max` | `1.50` | 相对地面的最高高度，单位 m，必须大于最小值 |
 | `sor_enabled` | `false` | 是否启用统计离群点过滤 |
 | `sor_mean_k` | `0` | SOR 邻域点数，启用时需不小于 2 |
 | `sor_stddev_multiplier` | `0.0` | SOR 标准差倍数，启用时需不小于 0 |
@@ -230,7 +236,9 @@ rviz 中同时显示：
 - `/mapping/path`：运动轨迹
 - `/mapping/map_2d`：二维 `OccupancyGrid`
 
-FAST-LIO 的世界坐标系为 `camera_init`，因此 rviz 的 `Fixed Frame` 设为 `camera_init`。三维点云和二维栅格使用同一坐标系与米制单位，二维地图的 `origin` 取滤波后点云的最小 `x/y`，`resolution` 为 `0.1 m`，所以两者的位置、方向、范围和格子大小一致。
+FAST-LIO 的世界坐标系是 `camera_init`，它取初始 IMU 姿态，不保证与重力对齐。`mapping_node` 用 bag 开头的 IMU 估计重力方向，把三维点云、里程计和轨迹旋转到 `map` 系，并把地面高度平移到 `z=0`；同时发布 `map -> camera_init` 静态 TF。rviz 的 `Fixed Frame` 设为 `map`。
+
+三维点云和二维栅格都在 `map` 系中，二维地图的 `origin` 取滤波后点云的最小 `x/y`，`origin.z = 0` 对应地面，`resolution` 为 `0.1 m`，所以两者的位置、方向、范围和格子大小一致。
 
 截图：
 

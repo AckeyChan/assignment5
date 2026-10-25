@@ -6,6 +6,10 @@ mapping_node:
     imu_topic: /livox/imu_192_168_1_140
     fastlio_lidar_topic: /livox/lidar
     fastlio_imu_topic: /livox/imu
+    fastlio_world_frame: camera_init
+    gravity_align: true
+    # Keep the bag stationary while these IMU frames are collected.
+    gravity_sample_count: 200
     map_frame: map
     body_frame: body
     map_output_path: maps/fastlio_map.pcd
