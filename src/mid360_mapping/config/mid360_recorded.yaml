@@ -4,9 +4,13 @@ mapping_node:
     input_type: livox_custom
     lidar_topic: /livox/lidar_192_168_1_140
     imu_topic: /livox/imu_192_168_1_140
+    fastlio_lidar_topic: /livox/lidar
+    fastlio_imu_topic: /livox/imu
     map_frame: map
     body_frame: body
-    map_output_path: ""
+    map_output_path: maps/fastlio_map.pcd
+# Relative paths are resolved from the directory where the node is started;
+# launch from the repository root so maps/ points at the repository maps folder.
 # Recorded sensor frame: livox_frame (sampled message headers).
 # body is the intended estimator frame, not a measured sensor extrinsic.
 # Keep actual calibration/units in your chosen backend's configuration.

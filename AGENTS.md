@@ -16,3 +16,4 @@ Existing mapping algorithms are allowed. Refer to their official documentation a
 - Do not edit submission files or run commands on the author's behalf.
 - Leave data adaptation, map processing, integration and parameter selection to the author.
 - Never invent sensor fields, units, extrinsics, accuracy or test results. Distinguish static inspection from successful builds and actual playback.
+- But if the author have finalized a specific plan，AI canrovide solution code or pseudocode, or supply a complete implementation plan or edit submission files or run commands on the author's behalf.

@@ -8,6 +8,7 @@ data/*
 !data/.gitkeep
 maps/*
 !maps/.gitkeep
+Livox-SDK2/
 *.db3
 *.db3-shm
 *.db3-wal
@@ -15,5 +16,9 @@ maps/*
 *.bag
 *.pcd
 *.ply
+__MACOSX/
+.vscode/
+rosbag2_2026_05_28-17_11_13/
+
 
 *.zip

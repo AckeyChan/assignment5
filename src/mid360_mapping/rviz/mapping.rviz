@@ -4,7 +4,7 @@ Panels:
 Visualization Manager:
   Class: ""
   Global Options:
-    Fixed Frame: map
+    Fixed Frame: camera_init
     Frame Rate: 30
   Displays:
     - Class: rviz_default_plugins/Grid
@@ -31,7 +31,10 @@ Visualization Manager:
         Depth: 10
     - Class: rviz_default_plugins/Map
       Name: Projected Occupancy Grid
-      Enabled: false
+      Enabled: true
+      Alpha: 0.7
+      Color Scheme: map
+      Draw Behind: true
       Topic:
         Value: /mapping/map_2d
         Reliability Policy: Reliable

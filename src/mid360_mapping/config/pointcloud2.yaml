@@ -6,6 +6,6 @@ mapping_node:
     imu_topic: /livox/imu
     map_frame: map
     body_frame: body
-    map_output_path: "" # Set an absolute .pcd output path after implementing map storage.
+    map_output_path: maps/fastlio_map.pcd
 # Add only parameters that your implementation actually declares and uses.
 # Extrinsics and per-point time fields must come from the provided data, not guessed defaults.

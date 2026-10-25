@@ -6,5 +6,5 @@ mapping_node:
     imu_topic: /livox/imu
     map_frame: map
     body_frame: body
-    map_output_path: ""
+    map_output_path: maps/fastlio_map.pcd
 # Requires sourced livox_ros_driver2 message type support even for generic reception.

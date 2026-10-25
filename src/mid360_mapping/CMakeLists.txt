@@ -10,8 +10,17 @@ find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common io filters)
+find_package(pcl_conversions REQUIRED)
 add_executable(mapping_node src/main.cpp src/mapping_node.cpp)
 add_executable(map_processor_node src/map_processor_node.cpp)
+
+
+
+
+
+
+
 foreach(target mapping_node map_processor_node)
   target_include_directories(${target} PRIVATE include)
   ament_target_dependencies(${target} rclcpp rcl_interfaces sensor_msgs nav_msgs geometry_msgs std_srvs)
@@ -19,6 +28,12 @@ foreach(target mapping_node map_processor_node)
     target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
   endif()
 endforeach()
+target_include_directories(mapping_node PRIVATE ${PCL_INCLUDE_DIRS})
+target_link_libraries(mapping_node ${PCL_LIBRARIES})
+ament_target_dependencies(mapping_node pcl_conversions)
+target_include_directories(map_processor_node PRIVATE ${PCL_INCLUDE_DIRS})
+target_link_libraries(map_processor_node ${PCL_LIBRARIES})
+ament_target_dependencies(map_processor_node pcl_conversions)
 install(TARGETS mapping_node map_processor_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch config rviz DESTINATION share/${PROJECT_NAME})
 ament_package()
